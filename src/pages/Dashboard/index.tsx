@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { isToday, format } from 'date-fns';
+import enGB from 'date-fns/locale/en-GB';
 import DayPicker, { DayModifiers } from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 
@@ -69,6 +71,19 @@ const Dashboard: React.FC = () => {
     return dates;
   }, [currentMonth, monthAvailability]);
 
+  const selectedDateAsText = useMemo(() => {
+    // return format(selectedDate, "'Dia' dd 'de' MMMM", {
+    //   locale: ptBR,
+    // });
+    return format(selectedDate, 'dd MMMM', {
+      locale: enGB,
+    });
+  }, [selectedDate]);
+
+  const selectedWeekDay = useMemo(() => {
+    return format(selectedDate, 'cccc');
+  }, [selectedDate]);
+
   return (
     <Container>
       <Header>
@@ -92,9 +107,9 @@ const Dashboard: React.FC = () => {
         <Schedule>
           <h1>Schedule</h1>
           <p>
-            <span>Today</span>
-            <span>Day 06</span>
-            <span>Monday</span>
+            {isToday(selectedDate) && <span>Today</span>}
+            <span>{selectedDateAsText}</span>
+            <span>{selectedWeekDay}</span>
           </p>
 
           <NextAppointment>
