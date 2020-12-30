@@ -21,7 +21,9 @@ import { useAuth } from '../../hooks/auth';
 interface ProfileFormData {
   name: string;
   email: string;
+  old_password: string;
   password: string;
+  password_confirmation: string;
 }
 
 const Profile: React.FC = () => {
@@ -43,20 +45,54 @@ const Profile: React.FC = () => {
           email: Yup.string()
             .required('E-mail is required')
             .email('Enter with a valid e-mail'),
-          password: Yup.string().min(6, 'Minimun 7 digits'),
+          old_password: Yup.string(),
+          password: Yup.string().when('old_password', {
+            is: val => !!val.length,
+            then: Yup.string().required('Required Field'),
+            otherwise: Yup.string(),
+          }),
+          password_confirmation: Yup.string()
+            .when('old_password', {
+              is: val => !!val.length,
+              then: Yup.string().required('Required Field'),
+              otherwise: Yup.string(),
+            })
+            .oneOf([Yup.ref('password'), null], 'Password must match'),
         });
         await schema.validate(data, {
           abortEarly: false,
         });
 
-        await api.post('/users', data);
+        const {
+          name,
+          email,
+          old_password,
+          password,
+          password_confirmation,
+        } = data;
 
-        history.push('/');
+        const formData = {
+          name,
+          email,
+          ...(old_password
+            ? {
+                old_password,
+                password,
+                password_confirmation,
+              }
+            : {}),
+        };
+
+        const response = await api.put('/profile', formData);
+
+        updateUser(response.data);
+
+        history.push('/dashboard');
 
         addToast({
           type: 'success',
-          title: 'The new user has been added successfuly!',
-          description: 'You are ready to logon at GoBarber!',
+          title: 'Profile has been updated successfuly!',
+          description: 'Your profile informations has been updated!',
         });
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
@@ -68,9 +104,9 @@ const Profile: React.FC = () => {
 
         addToast({
           type: 'error',
-          title: 'Creating new user error',
+          title: 'Update profile error',
           description:
-            'An error happened during the customer registration, try again.',
+            'An error happened during the update profile process, try again.',
         });
       }
     },
